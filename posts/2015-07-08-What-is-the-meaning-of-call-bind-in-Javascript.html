@@ -1,0 +1,41 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><meta name="renderer" content="webkit"><meta name="description" content="yay!"><link rel="icon" href="/favicon.ico"><title>2015-07-08-What-is-the-meaning-of-call-bind-in-Javascript</title><link rel="stylesheet" href="../resource/css/typo.css"><link rel="stylesheet" href="../resource/css/style.css"></head><body><div class="container"><h1 id="-what-is-the-meanings-of-call-bind-in-javascript-"><em>What is the meanings of <code>call.bind</code> in Javascript?</em></h1>
+<!-- 作为在 stackoverflow 上提出的第一个有实质性意义的问题的纪念。 -->
+<!-- For the first non-meaningless question of mine on stackoverflow. -->
+<p>Let get start with one common case, how we transform the array-like <code>arguments</code> object of a funciton to a real array?</p>
+<!--从一个常见的用法开始，如何把一个函数的 `arguments` 从一个类数组转为一个真正的数组？-->
+<pre><code class="lang-javascript">[].slice.call(arguments)
+
+// or more accurately
+Array.prototype.slice.call(arguments)
+</code></pre>
+<p>Common, indeed. Real meaning of this case: find the slice method on Array&#39;s prototype, and we can treat it is a static <strong>function</strong>, and bind <code>arguments</code> as <code>this</code> in it, and run.</p>
+<!--确实，常见。这个用法的实际意思是：在数组的原型链上找到 slice **方法**，找到后我们可以把它想象成一个静态的**函数**，就称之为 Slice，然后绑定 `arguments` 为 Slice 中的 `this`，并执行。-->
+<p>Or imagine we put the first argument of <code>call</code> (arguments) in front of the method (slice) which is in front of <code>call</code>. Maybe you want to remember this kind of description or <em>movement</em> (put arguments in front of slice).</p>
+<!--或者用一种更形象的方式解释，把 `arguments` 想象成一个正真的数组，然后像一个真正的数组一样去使用 `slice` 方法。也就是把 `slice` 前面换成 `call` 的第一个参数 `arguments`：`arguments.slice()`。接受并理解这种表示，应该会对下面要讲的东西有用，再重复一遍，把 `call` 的第一个参数（arguments）放到 `call` 前面方法（slice）的前面。-->
+<p>And recently, I discover something in this <a href="http://stackoverflow.com/questions/9468055/what-does-new-in-javascript-do-anyway/9468106#9468106">answer</a> I cann&#39;t understand at my first sight, so I ask one new question about it.</p>
+<!--也就前几天，在 [stackoverflow](http://stackoverflow.com/questions/9468055/what-does-new-in-javascript-do-anyway/9468106#9468106) 上看着一个问题的回答，-->
+<blockquote>
+<pre><code class="lang-javascript">var g = f.call.bind(f);
+</code></pre>
+</blockquote>
+<h2 id="-what-that-means-"><em>What that means?</em></h2>
+<p>So I ask one <a href="http://stackoverflow.com/q/31198503/3573327">new question</a> on stackoverflow. And soon I get two awesome answers. I will talk about the first in this article, and the second one next.</p>
+<p>Still remember the <code>[].slice.call(arguments)</code>? What we want is the <code>slice</code> method and what we do is using <code>call</code> on it. It is same to <code>f.call.bind(f)</code>, what we want here is the <code>call</code> method so <code>f.call</code> is as same as <code>Function.prototype.call</code> and what we do is using <code>bind</code> on it.</p>
+<p>The difference between <code>call</code> and <code>bind</code> is just run a method or return a new funtion. And the <em>movement</em>, we can do it on <code>f.call.bind(f)</code>, too. Replace what&#39;s in front of <code>call</code> by the first argument of <code>bind</code>, and we get <code>f.call</code>(just a frozen function, haven&#39;t run, waiting for its first argument) assigned to <code>g</code>.</p>
+<h2 id="-what-you-can-do-with-that-"><em>What you can do with that?</em></h2>
+<p>Maybe you want to lowercasify an array of strings:</p>
+<pre><code class="lang-javascript">strings . map(&#39;&#39;.toLowerCase.call)
+</code></pre>
+<p>Ha, you know it won&#39;t work! Because <code>&#39;&#39;.toLowerCase.call</code> just find the <code>call</code> method like a static function, it didn&#39;t know who want to make this <code>call</code>. Here it comes:</p>
+<pre><code class="lang-javascript">var call = Function.call
+var toLowerCase = &#39;&#39;.toLowerCase
+
+strings . map(call.bind(toLowerCase))
+</code></pre>
+<blockquote>
+<p>&quot;Invoke call with the first argument passed in and <code>&#39;&#39;.toLowerCase</code> as this, which by virtue of the definition of call, means to call toLowerCase with that argument as this.&quot;</p>
+</blockquote>
+<p>Or there is anther solution: <code>strings . map(call, toLowerCase)</code>, but this is something else.</p>
+<h2 id="-conclusion-"><em>Conclusion</em></h2>
+<p>What <code>call.bind(sth)</code> do is make a function that <code>sth</code> is waiting to be <code>call</code>ed.</p>
+</div><footer><a href="../../" class="links">Home</a><a href="https://github.com/zhulongzheng" target="_blank" class="links">Link</a><a href="mailto:zhulongzheng@gmail.com" class="links">Contact</a></footer></body></html>

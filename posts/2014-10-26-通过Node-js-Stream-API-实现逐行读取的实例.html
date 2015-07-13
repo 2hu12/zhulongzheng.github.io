@@ -1,0 +1,86 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><meta name="renderer" content="webkit"><meta name="description" content="yay!"><link rel="icon" href="/favicon.ico"><title>2014-10-26-通过Node-js-Stream-API-实现逐行读取的实例</title><link rel="stylesheet" href="../resource/css/typo.css"><link rel="stylesheet" href="../resource/css/style.css"></head><body><div class="container"><h1 id="-node-js-stream-api-">通过Node.js Stream API 实现逐行读取的实例</h1>
+<p>Node 给 streaming 带来了简洁和美。Streams 目前是一种很棒的用于建立模块和应用的方式。原来的 streams API 存在一些问题，在 v0.10 版本中对这些问题进行了修复，并且扩展了一些 API 使得应用更简单并且可以概括更多的应用场景。</p>
+<p>本篇文章将介绍并通过实例应用 v0.10 版本提供的新的 API。</p>
+<h3 id="-">逐行问题</h3>
+<p>具有良好组织的日志数据对一个公司的开发团队是非常宝贵的资源。为了更好的使用并分析它们，而不只是通过 shell 命令行去操作，我们需要<strong>逐行</strong>扫描日志数据。</p>
+<p>Stream 的优点就是我们不需要把整个日志文件都一次性读入内存，因为它们可能很庞大，而是在它们可以准备好去读取的时候再处理它们。Stream 可以工作于任何 I/O 场景下，包括文件系统，网络等等。</p>
+<p>通过使用心得 stream API，我们可以创建可复用的实现上述逐行操作的 I/O 模块。</p>
+<h3 id="transform-stream">Transform Stream</h3>
+<p>Node 0.10 提供了非常优雅的 stream.Transform 类，用以处理输入输出是因果相关的。对于我们的问题来说，输入和输出的数据是完全一样的，只是把输入的数据逐行分离为了更好的处理。</p>
+<p>位于管道中间层的 Transform 是即可读也可写的：
+<img src="http://lh5.googleusercontent.com/3df7l6Ja5OqzwNA3INt0YUdnP2emb__5yFGCB8lL4zegVnE5qf9Xy-b8mA-C-rzIfEofM2TcdtQgg8svTxNM5Bkcv1wiX91IasWXDvw1u6s_7yvDgSREd4eo" alt="pipeline">
+以下是使用 Transform的初始化代码：</p>
+<pre><code class="lang-javascript">var stream = require(&#39;stream&#39;)
+var liner = new stream.Transform( { objectMode: true } )
+</code></pre>
+<h3 id="-objectmode">打开 objectMode</h3>
+<p>吼吼，这个 <code>{objectMode: true}</code> 是个啥？如果没有这个 objectMode，stream 默认把纯数据块送过来，否则会把数据快放到一个 object 中，当然这个 object 中还会包含其他信息。</p>
+<h3 id="_transform-">_transform 方法</h3>
+<p>这只是一个开始，我们继续。Transform 类在应用时需要我们必须提供一个叫做 _transform 的方法，还有一个 _flush 方法可以选择提供。我们先来看一下这个 _transform 方法到底是什么。</p>
+<p>_transform 方法在每次 stream 中有数据来了之后都会被执行，先看代码：</p>
+<pre><code class="lang-javascript">liner._transform = function (chunk, encoding, done) {
+  var data = chunk.toString()
+  if (this._lastLineData) data = this._lastLineData + data
+
+  var lines = data.split(&#39;\n&#39;)
+  this._lastLineData = lines.splice(lines.length-1,1)[0]
+
+  lines.forEach(this.push.bind(this))
+  done()
+}
+</code></pre>
+<p>数据一来，_transform 方法就会被执行。联同数据一起过来的还有数据的编码和一个表示此数据已经接受完毕的信号函数。</p>
+<p>在这个问题中，我们并不关心编码问题。通过 <code>toString()</code> 把数据转为需要的字符串，然后再通过 <code>split(&#39;\n&#39;)</code> 数据块字符串按换行符打散为一个数组。然后在把每一行 push 到对应的处理模块中。</p>
+<p>注：push 方法是 Readable stream 类的内置方法，同时在 Node 0.8 版本中和产生 data 时间的的方法是同类的：</p>
+<pre><code class="lang-javascript">stream.emit(‘data’, data) ➤ stream.push(data)
+</code></pre>
+<p>最后通过调用 <code>done()</code> 方法来发出接受完成的信号。由于 done 方法是一个回调函数，我们也可以把它在 _transform 中进行异步调用。</p>
+<p>代码中的 _lastLineData 又是神马？在 stream 中我们并不想一块数据的结尾是从一行的中间断开的，为了解决这个问题，我们实际上并不会吧打散的数组中的最后一行送出去，而是留到下一次的数据块来的时候放到下一次数据块的开头。</p>
+<h3 id="_flush-">_flush 方法</h3>
+<p>然后我们再来看看这个 _flulsh 方法，还记得在 _transform 方法中每次 _lastLineData 的值都不会被送出去吗，是不是最后一次数据块的 _lastLindeData 就没法收到了？没错， _flush方法就是用来处理这种情况的。在所有的数据块都被 _transform 方法处理过后，才会调用 _flush 方法。所以它的作用就是处理残留数据的：</p>
+<pre><code class="lang-javascript">liner._flush = function (done) {
+  if (this._lastLineData) this.push(this._lastLineData)
+  this._lastLineData = null
+  done()
+}
+</code></pre>
+<p>如果有 _lastLineData 则把它 push 出去然后清空它，最后调用 ｀done()` 方法标志着完成处理残留数据的工作，同时这也意味着 stream 的结束。需要注意的是， _flush 方法并不是必须的有些场景下就不需要。</p>
+<h3 id="the-solution">The solution</h3>
+<p>以下代码是一个简单的逐行读取的模块的实现：</p>
+<pre><code class="lang-javascript">var stream = require(&#39;stream&#39;)
+var liner = new stream.Transform( { objectMode: true } )
+
+liner._transform = function (chunk, encoding, done) {
+  var data = chunk.toString()
+  if (this._lastLineData) data = this._lastLineData + data
+
+  var lines = data.split(&#39;\n&#39;)
+  this._lastLineData = lines.splice(lines.length-1,1)[0]
+
+  lines.forEach(this.push.bind(this))
+  done()
+}
+
+liner._flush = function (done) {
+     if (this._lastLineData) this.push(this._lastLineData)
+     this._lastLineData = null
+     done()
+}
+
+module.exports = liner
+</code></pre>
+<h3 id="testing-our-solution">Testing our solution</h3>
+<p>看起来已经差不多了，是不是可以用起来了？
+首先我们需要一个数据源。任何由行组成的文件都可以，以日志文件为例：</p>
+<pre><code class="lang-javascript">var fs = require(&#39;fs&#39;)
+var liner = require(&#39;./liner&#39;)
+var source = fs.createReadStream(&#39;./access_log&#39;)
+source.pipe(liner)
+liner.on(&#39;readable&#39;, function () {
+  var line
+  while (line = liner.read()) {
+    // do something with line
+  }
+})
+</code></pre>
+</div><footer><a href="../../" class="links">Home</a><a href="https://github.com/zhulongzheng" target="_blank" class="links">Link</a><a href="mailto:zhulongzheng@gmail.com" class="links">Contact</a></footer></body></html>

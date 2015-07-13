@@ -1,0 +1,54 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><meta name="renderer" content="webkit"><meta name="description" content="yay!"><link rel="icon" href="/favicon.ico"><title>2014-10-26-Angular-1-3-one-time-binding介绍</title><link rel="stylesheet" href="../resource/css/typo.css"><link rel="stylesheet" href="../resource/css/style.css"></head><body><div class="container"><h1 id="angular-1-3-one-time-binding-">Angular 1.3 one-time binding介绍</h1>
+<p>Angular 1.3 版本终于放出，在更新了许多新特性的同时也修复了许多bug并且带来性能提升。为了帮助自己也帮助别人更早理解这些新特性，接下来将会有一个系列文章去介绍这些主要的新特性和改进。本片文章是这个系列的第一篇，将介绍这其中最重要的一个新特性：one-time bindng。</p>
+<p>唉，先别急！我记得Angular的数据绑定是自动保持UI同步更新的啊？没错，这个特点非常重要，但不一定所有地方都需要。这种数据绑定的方式需要框架时刻监视着所有绑定过的数据，这种方式真的很消耗性能。one-time binding 正是为解决此问题而生的。在介绍 one-time binding 之前，先理解一下数据绑定和watcher的的概念。</p>
+<h3 id="-watchers">理解数据绑定和watchers</h3>
+<p>为了实现数据绑定，Angular 使用了 <a href="https://docs.angularjs.org/api/ng/type/$rootScope.Scope#$watch">$watch</a> API去观察 scope 上的数据的改动。其中 scope 具体是什么如何形成的取决于你的代码。如果你没有手动创建一个 child scope ，例如通过 ngController 指令去创建，那么你可能是在和 <a href="https://docs.angularjs.org/api/ng/service/$rootScope">$rootScope</a> 打交道，这个 $rootScope 是指当前应用的一般通过 ngApp 指令创建的根 scope。</p>
+<p>和 scope 打交道并观察其中的变化一般总是要用到所谓的 <em>watcher</em> 。Watchers 通过 DOM 中的 <a href="https://docs.angularjs.org/guide/directive">directives</a> 注册。比方说通过直接 interpolation 指令去同步 scope 模型的值：
+{% raw %}</p>
+<pre><code>&lt;p&gt;Hello {{name}}!&lt;/p&gt;
+</code></pre><p>{% endraw %}
+这个 interpolation 指令注册了一个用于 $rootScope 上 name 属性的 watcher，从而可以更新绑定了这个属性值的DOM。</p>
+<p>我们可以在 socpe 上通过标识符直接定义一个属性并同时给它赋值，这样它就可以直接在DOM中显示：</p>
+<pre><code class="lang-javascript">angular.module(&#39;maApp&#39;, [])
+.run(function($rootScope) {
+  $rootScope.name = &#39;Pascal&#39;;
+});
+</code></pre>
+<p>我们刚刚通过 interpolation 指令在 view 上绑定了一了一个 model 值，如果改变它的值，view 也会同时自动更新。可以通过添加一个按钮实现更新 name 属性值的操作：</p>
+<pre><code>&lt;button ng-click=&quot;name = &#39;Christoph&#39;&quot;&gt;Click me!&lt;/button&gt;
+</code></pre><p>点击这个按钮会把 Christoph 赋给 name 属性，这触发了一个 <a href="https://docs.angularjs.org/api/ng/type/$rootScope.Scope#$digest">$digest</a> 可以保持 DOM 相应更新的轮询。在这个例子中数据的<strong>更新</strong>只是单向的(上-&gt;下)。如果是在用到 <a href="https://docs.angularjs.org/api/ng/directive/ngModel">ngModel</a> 的 input 元素的例子中，用户可以输入内容改变这个属性的值，同时改变也实时的返回到实际的 model 上。</p>
+<p>这些是因为一个 $digest 轮询被触发才发生的，Angular 负责处理所有当前 scope 和它的 child scope 上注册过的 watchers，并检查 model 是否经过改动，然后直到 model 稳定调用并且没有更多的 listeners 被点燃，对应的 listeners 被调用。
+以下是以上描述的代码效果展示：</p>
+<iframe src="http://embed.plnkr.co/MGz5NrK1HKOy62fyVtmU/preview" style="width: 100%;"></iframe>
+
+
+<h3 id="-watcher-">太多watcher的问题</h3>
+<p>现在我们已经对 Angular 中的数据绑定机制有了一个大致的了解，那么可能想到为什么会需要 one-time binding 这样的特性呢？</p>
+<p>鉴于使用 watcher 来实现数据绑定的本质，我们可能会遇到有太多 watcher 时较差性能的问题。正如我们所了解的那样，watch expressions 和他们对应的 callback listeners 都是是注册在 scope 上的，基于此 Angular 可以在 $digest 轮询的时候处理它们也就保持了相应的 view 更行。简单地说，越多 watchers 被注册，Angular 要处理的也就越多。</p>
+<p>Now imagine you have a lot of dynamic values in your view that have to be evaluated by Angular. Internationalization for example, is a very common use case where developers use Angulars databinding to localize their apps, even if the language isn’t changeable during runtime, but set on initial page load. In that case every single string that is localized in the view and written to the scope, sets up a watch in order to get updated once something triggers the next $digest. This is a lot of overhead especially when your language actually doesn’t change at runtime.
+现在想象一种有许多动态值在 view 中的场景。比如国际化过程是非常常见的一种情况，需要 Angular 的数据绑定去做应用的本地化，尽管语言只在初始设置页才会更改，而在运行时是不会改变的。此情景下每一个字符串都被本地化到 view 中，同时也被写入到 scope 里，并且注册一个对应的 watcher 用于下次 $digest 轮询时可能的更新。如果语言的确不太可能在运行时改变，这样的代价实在是太高了。</p>
+<h3 id="one-time-binding-">one-time binding 来拯救你们了！</h3>
+<p>终于到了主角登场的时刻了。那么什么是 one-time bindings ？文档里是这么说的：</p>
+<blockquote>
+<p>&quot;
+One-time expressions will stop recalculating once they are stable, which happens after the first digest…
+第一次 digest 后，One-time 表达式一旦稳定后就不会再更新。
+&quot;</p>
+</blockquote>
+<p>上面提到的场景的确是 Angular 应当处理的问题。Angular 1.3 中引入了一种新语法用于表示 interpolation 指令绑定的 one-time。只需要在表达式前加入 <code>::</code> 双引号即可。同样是上面的例子，我们只需要把:
+{% raw %}</p>
+<pre><code class="lang-html">&lt;p&gt;Hello {{name}}!&lt;/p&gt;
+</code></pre>
+<p>{% endraw %}
+改为：
+{% raw %}</p>
+<pre><code class="lang-html">&lt;p&gt;Hello {{::name}}!&lt;/p&gt;
+</code></pre>
+<p>{% endraw %}</p>
+<p>这同样适用于其他 Angular 中典型的表达式。例如在 ng-repeat 表达式中或者仅需要从内部暴露出一个属性值的指令（不会从外部改变），只需要在外部把它设置为 one-time 表达式：</p>
+<pre><code>&lt;custom-directive two-way-attribute=&quot;::oneWayExpression&quot;&gt;&lt;/custom-directive&gt;
+</code></pre><p>下面是实际例子中的效果，已经把上面例子中的 name 改成了 ::name表示 one-time binding，其他则代码完全一样。注意按钮的作用是把 name 更新为 Christoph，不过再试试看：</p>
+<p><iframe src="http://embed.plnkr.co/WHHnp4KWKmd3O5twbzKV/preview" style="width: 100%;"></iframe>
+name的值不会再发生改变！</p>
+<p><a href="http://blog.thoughtram.io/angularjs/2014/10/14/exploring-angular-1.3-one-time-bindings.html">原文链接</a></p>
+</div><footer><a href="../../" class="links">Home</a><a href="https://github.com/zhulongzheng" target="_blank" class="links">Link</a><a href="mailto:zhulongzheng@gmail.com" class="links">Contact</a></footer></body></html>

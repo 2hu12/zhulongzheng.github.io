@@ -1,0 +1,39 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><meta name="renderer" content="webkit"><meta name="description" content="yay!"><link rel="icon" href="/favicon.ico"><title>2014-09-08-About-css-margin-collapse</title><link rel="stylesheet" href="../resource/css/typo.css"><link rel="stylesheet" href="../resource/css/style.css"></head><body><div class="container"><h1 id="about-css-margin-collapse">About css margin collapse</h1>
+<h3 id="-kejunz-http-kejun-github-io-bootcamp_htmlcss-13-bfc-block-formatting-contexts-"><a href="http://kejun.github.io/bootcamp_htmlcss/?13">@kejunz</a> 对BFC(Block formatting contexts)的特性总结中提到了它不存在边距折叠，后来感觉此种描述并不准确</h3>
+<p>引用自<a href="http://w3help.org/zh-cn/kb/006/#header_3">css框模型 外边距折叠</a></p>
+<blockquote>
+<p>&quot;
+In CSS, the adjoining margins of two or more boxes (which might or might not be siblings) can combine to form a single margin. Margins that combine this way are said to collapse, and the resulting combined margin is called a collapsed margin.
+Collapsing margins，即外边距折叠，指的是毗邻的两个或多个外边距 (margin) 会合并成一个外边距。
+&quot;</p>
+</blockquote>
+<p>其中所说的 margin 毗邻，可以归结为以下两点：</p>
+<ul>
+<li>这两个或多个外边距没有被非空内容、padding、border 或 clear 分隔开。</li>
+<li>这些 margin 都处于普通流中，即下文中的<strong>in-flow</strong>。</li>
+</ul>
+<hr>
+<h3 id="-w3c-css2-1-margin-collapse-http-www-w3-org-tr-css2-box-html-collapsing-margins-">关于标准中几点对发生边距折叠的总结 <a href="http://www.w3.org/TR/CSS2/box.html#collapsing-margins">w3c css2.1 margin collapse</a></h3>
+<ul>
+<li><p>Margins of elements that establish new block formatting contexts (such as floats and elements with &#39;overflow&#39; other than &#39;visible&#39;) do not collapse with their in-flow children.
+创建了块级格式化上下文1的元素，不和它的子元素发生 margin 折叠。</p>
+</li>
+<li><p>Margins between a floated box and any other box do not collapse (not even between a float and its in-flow children).
+Margins of inline-block boxes do not collapse (not even with their in-flow children).
+Margins of absolutely positioned boxes do not collapse (not even with their in-flow children).
+浮动元素、inline-block 元素、绝对定位元素的 margin 不会和垂直方向上其他元素的 margin 折叠。</p>
+</li>
+<li><p>The bottom margin of an in-flow block-level element always collapses with the top margin of its next in-flow block-level sibling, unless that sibling has clearance.
+处于普通流中的块级元素的 bottom margin 总是和它的下一个在普通流中的兄弟元素的 top margin 折叠，除非它的在普通流中的兄弟元素有间隙(通过设置clear不为none得到)，e.g. Three div elements, the second one is floated left <code>float: left</code>, so the first and third div are in-flow sibling for each other, but when the third div has <code>clear: left;</code>, the bottom margin of first div would not collapse with the third div. <a href="http://jsbin.com/cineci/1">my test on jsbin</a></p>
+</li>
+<li><p>The top margin of an in-flow block element collapses with its first in-flow block-level child&#39;s top margin if the element has no top border, no top padding, and the child has no clearance.
+处于普通流中的块级元素的 top margin 会和它的第一个处于普通流中的子元素的 top margin发生折叠，假如它(外面的父级元素)没有 border, top padding并且此子元素没有间隙。</p>
+</li>
+<li><p>The bottom margin of an in-flow block box with a &#39;height&#39; of &#39;auto&#39; and a &#39;min-height&#39; of zero collapses with its last in-flow block-level child&#39;s bottom margin if the box has no bottom padding and no bottom border and the child&#39;s bottom margin does not collapse with a top margin that has clearance.
+处于普通流中的块框，假如它的<code>height: auto; min-height: 0;</code>，那么它会和它最后一个处于普通流中的子块级元素发生边距折叠，假如这个块框(父级元素)没有 bottom padding 和 bottom border， 同时子元素也不会和有clearance的 top margin 折叠。</p>
+</li>
+<li><p>A box&#39;s own margins collapse if the &#39;min-height&#39; property is zero, and it has neither top or bottom borders nor top or bottom padding, and it has a &#39;height&#39; of either 0 or &#39;auto&#39;, and it does not contain a line box, and all of its in-flow children&#39;s margins (if any) collapse.
+如果一个框(box)的最小的<code>min-height: 0;</code>并且没有 top bottom borders 也没有 top bottom padding， 同时<code>height: 0;</code> 或者 <code>height: auto;</code>，同时它也不包含一个子级线框(line box)并且它所有的处于普通流中的子元素的边距都发生折叠，则这个框自己的上下边距发生折叠。</p>
+</li>
+</ul>
+</div><footer><a href="../../" class="links">Home</a><a href="https://github.com/zhulongzheng" target="_blank" class="links">Link</a><a href="mailto:zhulongzheng@gmail.com" class="links">Contact</a></footer></body></html>

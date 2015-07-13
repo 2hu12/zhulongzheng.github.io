@@ -1,0 +1,12 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><meta name="renderer" content="webkit"><meta name="description" content="yay!"><link rel="icon" href="/favicon.ico"><title>2014-09-19-About-Bootstrap-Grid-System-and-Its-Subtle-Magic</title><link rel="stylesheet" href="../resource/css/typo.css"><link rel="stylesheet" href="../resource/css/style.css"></head><body><div class="container"><h1 id="about-bootstrap-grid-system-and-its-subtle-magic">About Bootstrap Grid System and Its Subtle Magic</h1>
+<p>I have been using bootstrap for a pretty long time, but just use it, don&#39;t understand it very deeply.
+At first I don&#39;t realize that I have to put a bunch of <strong>columns</strong> inside a <strong>row</strong> which is also should be inside a <strong>container</strong>. And I&#39;m confused about the <strong>15px padding</strong> of the container and <strong>-15px margin</strong> of the row, also the <strong>15px padding</strong> of the column. But this is why the grid is subtle and excellent. Because it&#39;s perfect for nesting a row in a column.</p>
+<blockquote>
+<h3 id="-the-subtle-magic-behind-why-the-bootstrap-3-grid-works-http-www-helloerik-com-the-subtle-magic-behind-why-the-bootstrap-3-grid-works-"><a href="http://www.helloerik.com/the-subtle-magic-behind-why-the-bootstrap-3-grid-works">THE SUBTLE MAGIC BEHIND WHY THE BOOTSTRAP 3 GRID WORKS</a></h3>
+<h4 id="nesting">NESTING</h4>
+<p>When you have a container, row, and column set up, you can make new grids inside of a column. You add rows right inside the outer columns, you do not need to use them in containers:
+<img src="http://www.helloerik.com/wp-content/uploads/image-5.png" alt="nesting">
+The trick here is that the column acts the same way as a container, it has 15px of padding that allows the row’s negative 15px of margin to overlay it… which in turn lets columns inside of this new row touch the edges, but push the content in with its own 15px padding, which also creates the gutter, as seen below.
+<img src="http://www.helloerik.com/wp-content/uploads/image-6.png" alt="nesting"></p>
+</blockquote>
+</div><footer><a href="../../" class="links">Home</a><a href="https://github.com/zhulongzheng" target="_blank" class="links">Link</a><a href="mailto:zhulongzheng@gmail.com" class="links">Contact</a></footer></body></html>
