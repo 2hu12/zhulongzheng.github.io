@@ -1,4 +1,4 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><meta name="renderer" content="webkit"><meta name="description" content="yay!"><link rel="icon" href="/favicon.ico"><title>2014-10-22-js-regex-g-flag-and-performance</title><link rel="stylesheet" href="../resource/css/typo.css"><link rel="stylesheet" href="../resource/css/style.css"></head><body><div class="container"><h1 id="-js-lastindex">简单的js正则表达式的性能测试和lastIndex</h1>
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><meta name="renderer" content="webkit"><meta name="description" content="yay!"><link rel="icon" href="/favicon.ico"><title>2014-10-22-js-regex-g-flag-and-performance</title><link rel="stylesheet" href="../resource/css/typo.css"><link rel="stylesheet" href="../resource/css/style.css"></head><body><div class="container"><div class="article"><h1 id="-js-lastindex">简单的js正则表达式的性能测试和lastIndex</h1>
 <p>最近用到js做一些文本处理，免不了涉及正则表达式，由于文本的规模会达到GB级，速度和还是很关键的。</p>
 <p>根据 <a href="http://jsperf.com/regexp-test-search-vs-indexof/12">jsperf</a> 上的测试发现，如果需要用到正则去匹配的话，还是预编译的表达式<code>precompiled search</code>表现最好。这是一个比较容易也比较重要的优化项。</p>
 <p>看MDN发现有一个<code>g flag</code>代表global match也就是尝试所有可能的匹配。MDN上的相关解释如下。</p>
@@ -40,4 +40,4 @@ console.log(end - start);
 </code></pre>
 <p>两种情况的运行结果都在40+ms。</p>
 <p><strong>结论：即使加上<code>g flag</code>理论上也不影响速度，只需要将<code>lastIndex</code>清零，不过清零还是需要消耗的，所以如果只需要匹配判断，可以不用<code>g flag</code></strong></p>
-</div><footer><a href="../" class="links">Home</a><a href="https://github.com/zhulongzheng" target="_blank" class="links">Link</a><a href="mailto:zhulongzheng@gmail.com" class="links">Contact</a></footer></body></html>
+</div></div><footer><a href="../" class="links">Home</a><a href="https://github.com/zhulongzheng" target="_blank" class="links">Link</a><a href="mailto:zhulongzheng@gmail.com" class="links">Contact</a></footer></body></html>

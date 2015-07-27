@@ -1,0 +1,70 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><meta name="renderer" content="webkit"><meta name="description" content="yay!"><link rel="icon" href="/favicon.ico"><title>2015-07-27-Async-VS-Defer-VS-The-Other</title><link rel="stylesheet" href="../resource/css/typo.css"><link rel="stylesheet" href="../resource/css/style.css"></head><body><div class="container"><div class="article"><h1 id="async-vs-defer-vs-the-other">Async VS Defer VS The Other</h1>
+<p>I write this just as a reminder of this <a href="http://www.html5rocks.com/en/tutorials/speed/script-loading/">awesome article</a>, and my tiny version of the <code>quick reference</code> part. Also I feel confused about these things for a long time, and nearly messed up one interview.</p>
+<h2 id="plain-script-elements">Plain script elements</h2>
+<pre><code class="lang-javascript">&lt;script src=&quot;//other-domain.com/1.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;2.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+<ul>
+<li><p><strong>The spec</strong> says that they will be downloaded in parallel, execute in order, block rendering until complete.</p>
+</li>
+<li><p><strong>And all browsers</strong> will perform as the spec says.</p>
+</li>
+</ul>
+<h2 id="defer">Defer</h2>
+<pre><code class="lang-javascript">&lt;script src=&quot;//other-domain.com/1.js&quot; defer&gt;&lt;/script&gt;
+&lt;script src=&quot;2.js&quot; defer&gt;&lt;/script&gt;
+</code></pre>
+<ul>
+<li><p><strong>The spec</strong> says that they will be downloaded in parallel, execute in order, just before <code>DOMContentLoaded</code> event. And <code>defer</code> will be ignored on scripts without “src” property.</p>
+</li>
+<li><p>What <strong>IE &lt; 10</strong> will perform is that they might execute 2.js halfway through the execution of 1.js.</p>
+</li>
+<li><p><strong>Some <a href="http://caniuse.com/#search=defer">browsers</a> which don&#39;t support <code>defer</code></strong> will perform as if it weren&#39;t there.</p>
+</li>
+<li><p><strong>Other standard browsers</strong> will perform as the spec says.</p>
+</li>
+</ul>
+<h2 id="async">Async</h2>
+<pre><code class="lang-javascript">&lt;script src=&quot;//other-domain.com/1.js&quot; async&gt;&lt;/script&gt;
+&lt;script src=&quot;2.js&quot; async&gt;&lt;/script&gt;
+</code></pre>
+<ul>
+<li><p><strong>The spec</strong> says that they will be downloaded in parallel, execute as soon as one downloaded(not in order possibly), just before <code>DOMContentLoaded</code> event. And <code>defer</code> will be ignored on scripts without “src” property.</p>
+</li>
+<li><p><strong><a href="http://caniuse.com/#search=async">Some browsers which don&#39;t support <code>async</code></a></strong> will perform as if it weren&#39;t there.</p>
+</li>
+<li><p><strong>Other standard browsers</strong> will perform as the spec says.</p>
+</li>
+</ul>
+<h2 id="async-false">Async false</h2>
+<pre><code class="lang-javascript">[
+  &#39;1.js&#39;,
+  &#39;2.js&#39;
+].forEach(function(src) {
+  var script = document.createElement(&#39;script&#39;)
+  script.src = src
+  script.async = false
+  document.head.appendChild(script)
+})
+</code></pre>
+<ul>
+<li><p><strong>The spec</strong> says that they will be downloaded in parallel, execute in order as soon as all downloaded.</p>
+</li>
+<li><p><strong>Firefox &lt; 3.6 and Opera</strong> don&#39;t support “async”, but it just so happens they execute scripts added via JS in the order they’re added.</p>
+</li>
+<li><p><strong>Safari 5.0</strong> does support “async”, but doesn’t understand setting it to “false” with JS. It’ll execute scripts as soon as they downloaded, in whatever order.</p>
+</li>
+<li><p>What <strong>IE &lt; 10</strong> don&#39;t support “async”, but <a href="http://www.html5rocks.com/en/tutorials/speed/script-loading/#interesting-ie">there is a workaround</a> using “onreadystatechange”.</p>
+</li>
+<li><p><strong>[Some other browsers which don&#39;t support <code>async is false</code>]</strong> will execute scripts as soon as they downloaded, in whatever order.</p>
+</li>
+<li><p><strong>Other standard browsers</strong> will perform as the spec says.</p>
+</li>
+</ul>
+<p>Why we need this?</p>
+<blockquote>
+<p>Scripts that are dynamically created and added to the document are async by default, they don’t block rendering and execute as soon as they download, meaning they could come out in the wrong order. However, we can explicitly mark them as not async.</p>
+<p>This gives our scripts a mix of behavior that can’t be achieved with plain HTML. By being explicitly not async, scripts are added to an execution queue, the same queue they’re added to in our first plain-HTML example. However, by being dynamically created, they’re executed outside of document parsing, so rendering isn’t blocked while they’re downloaded (don’t confuse not-async script loading with sync XHR, which is never a good thing).</p>
+</blockquote>
+<p>So maybe this is the silver bullet in the ideal case, but the reality is that the IE &lt; 10 browsers are the obstacles.</p>
+</div></div><footer><a href="../" class="links">Home</a><a href="https://github.com/zhulongzheng" target="_blank" class="links">Link</a><a href="mailto:zhulongzheng@gmail.com" class="links">Contact</a></footer></body></html>
